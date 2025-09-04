@@ -440,6 +440,7 @@ let
         oslotest
         pre-commit
         python3Packages
+        sqlalchemy
         ;
     };
     oslo-i18n = callPackage ./oslo-i18n.nix { inherit python3Packages; };
@@ -705,6 +706,7 @@ let
     sphinxcontrib-svg2pdfconverter = callPackage ./sphinxcontrib-svg2pdfconverter.nix {
       inherit python3Packages;
     };
+    sqlalchemy = callPackage ./sqlalchemy.nix { inherit python3Packages; };
     suds-community = callPackage ./suds-community.nix { inherit python3Packages; };
     taskflow = callPackage ./taskflow.nix {
       inherit
