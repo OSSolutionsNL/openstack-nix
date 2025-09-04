@@ -191,7 +191,7 @@ let
         python3Packages
         ;
     };
-    openstacksdk = python3Packages.openstacksdk.override {
+    openstacksdk = callPackage ./openstacksdk.nix {
       inherit keystoneauth1;
     };
     neutron-lib = callPackage ./neutron-lib.nix {
@@ -397,7 +397,7 @@ let
         python3Packages
         ;
     };
-    osc-lib = python3Packages.osc-lib.override {
+    osc-lib = callPackage ./osc-lib.nix {
       inherit
         openstacksdk
         oslo-i18n
