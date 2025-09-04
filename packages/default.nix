@@ -156,6 +156,7 @@ let
         osprofiler
         python-keystoneclient
         python3Packages
+        sqlalchemy
         ;
     };
     keystoneauth1 = callPackage ./keystoneauth1.nix {
@@ -213,6 +214,7 @@ let
         oslotest
         osprofiler
         python3Packages
+        sqlalchemy
         ;
     };
     neutron = callPackage ./neutron.nix {
@@ -252,6 +254,7 @@ let
         python-neutronclient
         python-novaclient
         python3Packages
+        sqlalchemy
         tooz
         ;
     };
@@ -295,6 +298,7 @@ let
         python-glanceclient
         python-neutronclient
         python3Packages
+        sqlalchemy
         tooz
         ;
     };
@@ -315,6 +319,7 @@ let
         oslo-utils
         oslotest
         python3Packages
+        sqlalchemy
         ;
     };
     os-brick = callPackage ./os-brick.nix {

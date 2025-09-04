@@ -37,6 +37,7 @@
   python-neutronclient,
   python-novaclient,
   python3Packages,
+  sqlalchemy,
   tooz,
   writeScript,
 }:
@@ -64,7 +65,6 @@ let
     python-subunit
     requests
     routes
-    sqlalchemy
     stestr
     tenacity
     testresources

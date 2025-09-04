@@ -13,6 +13,7 @@
   osprofiler,
   python-keystoneclient,
   python3Packages,
+  sqlalchemy,
   which,
 }:
 let
@@ -36,7 +37,6 @@ let
     pymysql
     pysaml2
     requests
-    sqlalchemy
     stestr
     tempest
     testresources

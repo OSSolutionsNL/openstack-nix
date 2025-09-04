@@ -40,6 +40,7 @@
   python-glanceclient,
   python-neutronclient,
   python3Packages,
+  sqlalchemy,
   tooz,
   writeScript,
 }:
@@ -79,7 +80,6 @@ let
     retrying
     rfc3986
     routes
-    sqlalchemy
     stestr
     stevedore
     testresources
@@ -108,7 +108,7 @@ python3Packages.buildPythonPackage (rec {
   ];
 
   propagatedBuildInputs = [
-    alembic
+    (alembic.override { inherit sqlalchemy; })
     castellan
     cryptography
     cursive
