@@ -645,7 +645,7 @@ let
         reno
         ;
     };
-    python-cinderclient = python3Packages.python-cinderclient.override {
+    python-cinderclient = callPackage ./python-cinderclient.nix {
       inherit
         keystoneauth1
         oslo-i18n
