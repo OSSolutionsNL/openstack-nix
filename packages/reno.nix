@@ -55,7 +55,7 @@ python3Packages.buildPythonPackage rec {
     owner = "openstack";
     repo = "reno";
     rev = "${version}";
-    sha256 = "sha256-SPepaOvq4LKV6EBmgXrlAku1Ug5Y1Zq7pjxkNPdrqVg=";
+    sha256 = "sha256-zB/iAR0YV3QaQVshCva24OgvRokT+lDeTXGeHi6XkUA=";
     leaveDotGit = true;
   };
 }
