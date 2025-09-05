@@ -29,6 +29,40 @@ let
         python3Packages
         ;
     };
+    cinder = callPackage ./cinder.nix {
+      inherit
+        castellan
+        cursive
+        keystoneauth1
+        keystonemiddleware
+        os-brick
+        oslo-concurrency
+        oslo-config
+        oslo-context
+        oslo-db
+        oslo-log
+        oslo-messaging
+        oslo-middleware
+        oslo-policy
+        oslo-privsep
+        oslo-reports
+        oslo-rootwrap
+        oslo-serialization
+        oslo-service
+        oslo-upgradecheck
+        oslo-utils
+        oslo-versionedobjects
+        oslo-vmware
+        oslotest
+        osprofiler
+        python-glanceclient
+        python-keystoneclient
+        python-novaclient
+        python-swiftclient
+        taskflow
+        tooz
+        ;
+    };
     django-debreach = callPackage ./django-debreach.nix { inherit python3Packages; };
     django-discover-runner = callPackage ./django-discover-runner.nix { inherit python3Packages; };
     django-pyscss = callPackage ./django-pyscss.nix { inherit python3Packages; };
