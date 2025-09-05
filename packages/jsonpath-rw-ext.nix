@@ -1,5 +1,4 @@
 {
-  discover,
   fetchPypi,
   python3Packages,
 }:
@@ -32,7 +31,6 @@ python3Packages.buildPythonPackage rec {
 
   checkInputs = [
     coverage
-    discover
     hacking
     oslotest
     python-subunit

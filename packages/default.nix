@@ -156,6 +156,7 @@ let
         osprofiler
         python-keystoneclient
         python3Packages
+        sqlalchemy
         ;
     };
     keystoneauth1 = callPackage ./keystoneauth1.nix {
@@ -190,7 +191,7 @@ let
         python3Packages
         ;
     };
-    openstacksdk = python3Packages.openstacksdk.override {
+    openstacksdk = callPackage ./openstacksdk.nix {
       inherit keystoneauth1;
     };
     neutron-lib = callPackage ./neutron-lib.nix {
@@ -213,6 +214,7 @@ let
         oslotest
         osprofiler
         python3Packages
+        sqlalchemy
         ;
     };
     neutron = callPackage ./neutron.nix {
@@ -252,6 +254,7 @@ let
         python-neutronclient
         python-novaclient
         python3Packages
+        sqlalchemy
         tooz
         ;
     };
@@ -295,6 +298,7 @@ let
         python-glanceclient
         python-neutronclient
         python3Packages
+        sqlalchemy
         tooz
         ;
     };
@@ -315,6 +319,7 @@ let
         oslo-utils
         oslotest
         python3Packages
+        sqlalchemy
         ;
     };
     os-brick = callPackage ./os-brick.nix {
@@ -392,7 +397,7 @@ let
         python3Packages
         ;
     };
-    osc-lib = python3Packages.osc-lib.override {
+    osc-lib = callPackage ./osc-lib.nix {
       inherit
         openstacksdk
         oslo-i18n
@@ -440,6 +445,7 @@ let
         oslotest
         pre-commit
         python3Packages
+        sqlalchemy
         ;
     };
     oslo-i18n = callPackage ./oslo-i18n.nix { inherit python3Packages; };
@@ -644,7 +650,7 @@ let
         reno
         ;
     };
-    python-cinderclient = python3Packages.python-cinderclient.override {
+    python-cinderclient = callPackage ./python-cinderclient.nix {
       inherit
         keystoneauth1
         oslo-i18n
@@ -705,6 +711,7 @@ let
     sphinxcontrib-svg2pdfconverter = callPackage ./sphinxcontrib-svg2pdfconverter.nix {
       inherit python3Packages;
     };
+    sqlalchemy = callPackage ./sqlalchemy.nix { inherit python3Packages; };
     suds-community = callPackage ./suds-community.nix { inherit python3Packages; };
     taskflow = callPackage ./taskflow.nix {
       inherit

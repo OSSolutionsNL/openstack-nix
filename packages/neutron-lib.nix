@@ -18,6 +18,7 @@
   oslotest,
   osprofiler,
   python3Packages,
+  sqlalchemy,
 }:
 let
   inherit (python3Packages)
@@ -33,7 +34,6 @@ let
     pylint
     python-subunit
     setproctitle
-    sqlalchemy
     stestr
     stevedore
     testresources

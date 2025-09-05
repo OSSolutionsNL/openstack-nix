@@ -8,6 +8,7 @@
   pifpaf,
   pre-commit,
   python3Packages,
+  sqlalchemy,
 }:
 let
   inherit (python3Packages)
@@ -21,7 +22,6 @@ let
     psycopg2
     pymysql
     python-subunit
-    sqlalchemy
     stestr
     stevedore
     testresources
@@ -34,7 +34,7 @@ python3Packages.buildPythonPackage rec {
   version = "17.0.0";
 
   propagatedBuildInputs = [
-    alembic
+    (alembic.override { inherit sqlalchemy; })
     debtcollector
     oslo-config
     oslo-i18n

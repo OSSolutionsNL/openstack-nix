@@ -15,6 +15,7 @@
   oslo-utils,
   oslotest,
   python3Packages,
+  sqlalchemy,
 }:
 let
   inherit (python3Packages)
@@ -22,7 +23,6 @@ let
     pbr
     pymysql
     routes
-    sqlalchemy
     stestr
     ;
 in
