@@ -25,6 +25,7 @@ in
 {
   imports = [
     ./generic.nix
+    ../generic/controller-host-entry.nix
     (import ./keystone.nix { inherit keystone; })
     (import ./glance.nix { inherit glance; })
     (import ./placement.nix { inherit placement; })

@@ -13,26 +13,30 @@ let
   common =
     { pkgs, lib, ... }:
     {
-      system.stateVersion = lib.trivial.release;
-
-      services.getty.autologinUser = "root";
-
-      networking.extraHosts = ''
-        10.0.0.11 controller controller.local
-      '';
-
-      networking = {
-        useDHCP = false;
-        networkmanager.enable = false;
-        useNetworkd = true;
-        firewall.enable = false;
-      };
-
-      environment.systemPackages = [
-        pkgs.openstackclient
+      imports = [
+        ../generic/controller-host-entry.nix
       ];
 
-      environment.variables = adminEnv;
+      config = {
+        system.stateVersion = lib.trivial.release;
+
+        services.getty.autologinUser = "root";
+
+        openstack.controllerIP = "10.0.0.11";
+
+        networking = {
+          useDHCP = false;
+          networkmanager.enable = false;
+          useNetworkd = true;
+          firewall.enable = false;
+        };
+
+        environment.systemPackages = [
+          pkgs.openstackclient
+        ];
+
+        environment.variables = adminEnv;
+      };
     };
 in
 {
