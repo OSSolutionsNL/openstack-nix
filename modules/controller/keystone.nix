@@ -39,6 +39,11 @@ let
     catalog.RegionOne.placement.adminURL = http://controller:8778
     catalog.RegionOne.placement.internalURL = http://controller:8778
     catalog.RegionOne.placement.name = Placement Service
+
+    catalog.RegionOne.volumev3.publicURL = http://controller:8776/v3
+    catalog.RegionOne.volumev3.adminURL = http://controller:8776/v3
+    catalog.RegionOne.volumev3.internalURL = http://controller:8776/v3
+    catalog.RegionOne.volumev3.name = Cinder Service
   '';
 
   keystoneConf = pkgs.writeText "keystone.conf" ''

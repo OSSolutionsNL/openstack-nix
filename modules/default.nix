@@ -7,6 +7,7 @@
       keystone
       glance
       horizon
+      cinder
       ;
     placement = openstackPkgs.openstack-placement;
   };
