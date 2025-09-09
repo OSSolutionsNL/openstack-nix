@@ -107,6 +107,9 @@ let
 
     [os_region_name]
     openstack =
+
+    [cinder]
+    os_region_name = RegionOne
   '';
 
   rootwrapConf = pkgs.callPackage ../../lib/rootwrap-conf.nix {
