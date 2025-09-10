@@ -91,6 +91,11 @@ let
     username = nova
     password = nova
 
+    [serial_console]
+    enabled = true
+    serialproxy_host = 0.0.0.0
+    proxyclient_address = $my_ip
+
     [vnc]
     enabled = true
     server_listen = 0.0.0.0
