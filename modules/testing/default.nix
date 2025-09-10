@@ -103,6 +103,7 @@ in
       virtualisation = {
         cores = 4;
         memorySize = 6144;
+        diskSize = 8192;
         interfaces = {
           eth1 = {
             vlan = 1;
