@@ -50,6 +50,9 @@ let
     username = nova
     password = nova
 
+    [serial_console]
+    enabled = true
+
     [vnc]
     enabled = true
     server_listen = $my_ip
@@ -293,6 +296,31 @@ in
         Type = "simple";
         ExecStart = pkgs.writeShellScript "nova-novncproxy.sh" ''
           nova-novncproxy --config-file ${cfg.config}
+        '';
+        Restart = "on-failure";
+        LimitNOFILE = 65535;
+        TimeoutStopSec = 15;
+      };
+    };
+
+    systemd.services.nova-serialproxy = {
+      description = "OpenStack Nova serial proxy";
+      after = [
+        "nova.service"
+        "mysql.service"
+        "keystone.service"
+        "rabbitmq.service"
+        "network-online.target"
+      ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ cfg.novaPackage ];
+      serviceConfig = {
+        User = "nova";
+        Group = "nova";
+        Type = "simple";
+        ExecStart = pkgs.writeShellScript "nova-serialproxy.sh" ''
+          nova-serialproxy --config-file ${cfg.config}
         '';
         Restart = "on-failure";
         LimitNOFILE = 65535;

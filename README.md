@@ -79,6 +79,14 @@ nix build .#tests.x86_64-linux.<test-name>.driverInteractive
 ./result/bin/nixos-test-driver
 ```
 
+#### Dashboard access
+
+The NixOS tests configure some port forwarding in order to allow access to the
+OpenStack dashboard. The port forwarding can be configured via
+`openstack-testing.dashboardHostPort` and the default host port used is `8080`.
+While a NixOS test is running, the dashboard can be accessed via
+`127.0.0.1:8080` or the configured host port.
+
 ## Scope
 
 OpenStack is a very large and super actively maintained project. We are aware that we cannot keep track of all its development or offer every single configuration option via NixOS modules.

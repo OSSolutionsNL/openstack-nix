@@ -38,6 +38,52 @@ let
         environment.variables = adminEnv;
       };
     };
+
+  portForwarding =
+    { config, lib, ... }:
+    with lib;
+    let
+      cfg = config.openstack-testing;
+    in
+    {
+      options.openstack-testing = {
+        enable = mkEnableOption "Enable port forwarding." // {
+          default = true;
+        };
+        dashboardHostPort = mkOption {
+          default = 8080;
+          type = types.port;
+          description = ''
+            Host port to make the OpenStack dashboard accessible when running
+            the OpenStack controller in a VM. Dashboard can be accessed via:
+            localhost:<dashboardHostPort>
+          '';
+        };
+        serialProxyHostPort = mkOption {
+          default = 6083;
+          type = types.port;
+          description = ''
+            Host port to make the web console feature available for the
+            OpenStack dashboard. Changing the value might requires to change
+            the configuration of the dashboard.
+          '';
+        };
+      };
+      config = mkIf cfg.enable {
+        virtualisation.forwardPorts = [
+          {
+            from = "host";
+            host.port = cfg.dashboardHostPort;
+            guest.port = 80;
+          }
+          {
+            from = "host";
+            host.port = cfg.serialProxyHostPort;
+            guest.port = 6083;
+          }
+        ];
+      };
+    };
 in
 {
   testController =
@@ -49,7 +95,10 @@ in
       };
     in
     {
-      imports = [ common ];
+      imports = [
+        common
+        portForwarding
+      ];
 
       virtualisation = {
         cores = 4;
