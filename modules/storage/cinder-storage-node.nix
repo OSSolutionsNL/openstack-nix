@@ -51,6 +51,7 @@ let
     state_path = /var/lib/cinder
     rootwrap_config = ${rootwrapConf}
     glance_api_servers = http://controller:9292
+    verify_glance_signatures = disabled
 
     [database]
     connection = mysql+pymysql://cinder:cinder@controller/cinder
@@ -74,6 +75,7 @@ let
     volume_group = cinder-volumes
     volume_backend_name = lvm
     lvm_type = default
+    target_protocol = iscsi
   '';
 in
 {
@@ -181,10 +183,13 @@ in
       path = with pkgs; [
         cinder_env
         lvm2
+        tgt
+        qemu-utils
         # sudo must be in the path and only sudo in /run/wrappers has the
         # correct owner and rights
         "/run/wrappers"
       ];
+      environment.PYTHONPATH = "${cinder_env}/${pkgs.python3.sitePackages}";
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         User = "cinder";

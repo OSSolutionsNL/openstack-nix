@@ -16,6 +16,7 @@ let
     transport_url = rabbit://openstack:openstack@controller
     auth_strategy = keystone
     my_ip = controller
+    verify_glance_signatures = disabled
 
     [database]
     connection = mysql+pymysql://cinder:cinder@controller/cinder

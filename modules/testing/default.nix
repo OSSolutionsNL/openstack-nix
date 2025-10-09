@@ -93,6 +93,9 @@ in
         url = "https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img";
         hash = "sha256-B+RKc+VMlNmIAoUVQDwe12IFXgG4OnZ+3zwrOH94zgA=";
       };
+      image_raw = pkgs.runCommand "" { } ''
+        ${pkgs.qemu-utils}/bin/qemu-img convert -O raw ${image} $out
+      '';
     in
     {
       imports = [
@@ -135,8 +138,11 @@ in
               --dns-nameserver 8.8.4.4 --gateway 192.168.44.1 \
               --subnet-range 192.168.44.0/24 provider
 
-            openstack image create --disk-format qcow2 --container-format bare --public --file ${image} cirros
+            openstack image create --disk-format raw --container-format bare --public --file ${image_raw} cirros
             openstack flavor create --public m1.nano --id auto --ram 256 --disk 0 --vcpus 1
+            openstack volume qos create --consumer "front-end" --property "total_iops_sec=20000" iops
+            openstack volume qos associate iops __DEFAULT__
+            openstack volume create --image cirros --size 1 --bootable vol
 
             openstack security group rule create --proto icmp default
             openstack security group rule create --proto tcp --dst-port 22 default
