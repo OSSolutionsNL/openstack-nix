@@ -33,9 +33,26 @@ let
 
         environment.systemPackages = [
           pkgs.openstackclient
+          pkgs.openiscsi
+          pkgs.sshpass
         ];
 
         environment.variables = adminEnv;
+
+        # enable easy access to test VMs with ssh
+        users.users.root.openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEMjGRp1/vaTxGiGbZnaSv4wu4LUUP7lGSGDFKfF31xw paul.kroeher@cyberus-technology.de"
+        ];
+
+        services.openssh = {
+          enable = true;
+          ports = [ 22 ];
+          settings = {
+            PasswordAuthentication = true;
+            PermitRootLogin = "without-password"; # "yes", "without-password", "prohibit-password", "forced-commands-only", "no"
+          };
+        };
+
       };
     };
 
@@ -115,6 +132,14 @@ in
             vlan = 2;
           };
         };
+        # enable ssh access
+        forwardPorts = [
+          {
+            from = "host";
+            host.port = 1122;
+            guest.port = 22;
+          }
+        ];
       };
 
       systemd.services.openstack-create-vm = {
@@ -170,14 +195,13 @@ in
             matchConfig.Name = [ "eth0" ];
             networkConfig = {
               DHCP = "yes";
+              DNS = "8.8.8.8";
             };
           };
           eth1 = {
             matchConfig.Name = [ "eth1" ];
             networkConfig = {
               Address = "10.0.0.11/24";
-              Gateway = "10.0.0.1";
-              DNS = "8.8.8.8";
             };
           };
 
@@ -236,5 +260,71 @@ in
         };
       };
 
+    };
+
+  testStorage =
+    { ... }:
+    {
+
+      imports = [ common ];
+
+      virtualisation = {
+        memorySize = 4096;
+        cores = 4;
+        diskSize = 4096;
+        # add separate disk as LVM backend
+        emptyDiskImages = [
+          16384 # 16GB
+        ];
+        interfaces = {
+          eth1 = {
+            vlan = 1;
+          };
+          eth2 = {
+            vlan = 2;
+          };
+        };
+        # enable ssh access
+        forwardPorts = [
+          {
+            from = "host";
+            host.port = 2022;
+            guest.port = 22;
+          }
+        ];
+      };
+
+      systemd.network = {
+        enable = true;
+        wait-online.enable = false;
+
+        networks = {
+          eth0 = {
+            matchConfig.Name = [ "eth0" ];
+            networkConfig = {
+              DHCP = "yes";
+              LinkLocalAddressing = "yes";
+              KeepConfiguration = "yes";
+              DNS = "8.8.8.8";
+            };
+          };
+
+          eth1 = {
+            matchConfig.Name = [ "eth1" ];
+            networkConfig = {
+              Address = "10.0.0.20/24";
+            };
+          };
+
+          eth2 = {
+            matchConfig.Name = [ "eth2" ];
+            networkConfig = {
+              DHCP = "no";
+              LinkLocalAddressing = "no";
+              KeepConfiguration = "yes";
+            };
+          };
+        };
+      };
     };
 }

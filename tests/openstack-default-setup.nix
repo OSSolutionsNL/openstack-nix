@@ -23,6 +23,15 @@ pkgs.nixosTest {
       ];
     };
 
+  nodes.storageVM =
+    { ... }:
+    {
+      imports = [
+        nixosModules.storageModule
+        nixosModules.testModules.testStorage
+      ];
+    };
+
   testScript =
     { ... }:
     ''
@@ -55,7 +64,11 @@ pkgs.nixosTest {
           if status != 0:
             continue
           compute_nodes = json.loads(out)
-          if len(net_agents) == 4 and len(compute_nodes) == 1 and compute_nodes[0].get("Host","None") == "computeVM":
+          status, out = controllerVM.execute("openstack volume service list -f json")
+          if status != 0:
+            continue
+          storage_nodes = json.loads(out)
+          if len(storage_nodes) == 2 and len(net_agents) == 4 and len(compute_nodes) == 1 and compute_nodes[0].get("Host","None") == "computeVM":
             return True
         return False
 
@@ -98,6 +111,10 @@ pkgs.nixosTest {
       controllerVM.wait_for_unit("nova-scheduler.service")
       controllerVM.wait_for_unit("nova-conductor.service")
 
+      # check all services on storageVM
+      storageVM.wait_for_unit("tgtd.service")
+      storageVM.wait_for_unit("cinder-volume.service")
+
       assert wait_for_openstack()
 
       controllerVM.succeed("systemctl start nova-host-discovery.service")
@@ -117,5 +134,19 @@ pkgs.nixosTest {
       # Ping the OpenStack VM from the controller host. We use the network
       # namespace dedicated for the VM to ping it.
       assert retry_until_succeed(controllerVM, f"ip netns exec {net_ns} ping -c 1 {vm_ip}", 30)
+
+      # create volume with 4GB
+      controllerVM.execute("openstack volume create --size 4 test_vol")
+      # attach volume to VM
+      controllerVM.execute("openstack server add volume test_vm test_vol")
+      # wait until volume is attached
+      time.sleep(20)
+
+      retry_until_succeed(controllerVM, f"ip netns exec {net_ns} sshpass -p gocubsgo ssh cirros@{vm_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lsblk", 60)
+      # check second block device of VM
+      status, output = controllerVM.execute(f"ip netns exec {net_ns} sshpass -p gocubsgo ssh cirros@{vm_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lsblk | grep vdb")
+      output = output.strip()
+      assert status == 0
+      assert output == "vdb     252:16   0    4G  0 disk"
     '';
 }

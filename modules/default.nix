@@ -14,5 +14,7 @@
 
   computeModule = import ./compute/compute.nix { inherit (openstackPkgs) neutron nova; };
 
+  storageModule = import ./storage/cinder-storage-node.nix { inherit (openstackPkgs) cinder; };
+
   testModules = import ./testing { };
 }

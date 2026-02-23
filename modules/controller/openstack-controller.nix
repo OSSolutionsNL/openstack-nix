@@ -33,8 +33,9 @@ in
     (import ./nova.nix { inherit nova; })
     (import ./neutron.nix { inherit neutron; })
     (import ./horizon.nix { inherit horizon; })
-    (import ./cinder.nix { inherit cinder; })
-    (import ../storage/cinder-storage-node.nix { inherit cinder; })
+    (import ./cinder.nix { inherit cinder; }) # only cinder management component
+    # deploy real storage backend into a separate storageNode
+    # (import ../storage/cinder-storage-node.nix { inherit cinder; })
   ];
 
   config = {

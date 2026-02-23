@@ -9,15 +9,6 @@
 }:
 with lib;
 let
-  # adminEnv = {
-  #   OS_USERNAME = "admin";
-  #   OS_PASSWORD = "admin";
-  #   OS_PROJECT_NAME = "admin";
-  #   OS_USER_DOMAIN_NAME = "Default";
-  #   OS_PROJECT_DOMAIN_NAME = "Default";
-  #   OS_AUTH_URL = "http://controller:5000/v3";
-  #   OS_IDENTITY_API_VERSION = "3";
-  # };
   cfg = config.cinder-storage-node;
 
   cinder_env = pkgs.python3.buildEnv.override {
@@ -32,6 +23,7 @@ let
     paths = [
       cinder_env
       pkgs.qemu
+      pkgs.tgt
     ];
   };
 
@@ -45,13 +37,17 @@ let
     [DEFAULT]
     transport_url = rabbit://openstack:openstack@controller
     auth_strategy = keystone
-    my_ip = controller
+    my_ip = 10.0.0.20
     enabled_backends = lvm
     volumes_dir = /var/lib/cinder/volumes
     state_path = /var/lib/cinder
     rootwrap_config = ${rootwrapConf}
     glance_api_servers = http://controller:9292
     verify_glance_signatures = disabled
+    log_dir = /var/log/cinder
+    iscsi_ip_address = $my_ip
+    iscsi_port = 3260
+    iscsi_target_prefix = iqn.2010-10.org.openstack:
 
     [database]
     connection = mysql+pymysql://cinder:cinder@controller/cinder
@@ -76,6 +72,14 @@ let
     volume_backend_name = lvm
     lvm_type = default
     target_protocol = iscsi
+    target_helper = tgtadm
+    iscsi_ip_address = $my_ip
+    iscsi_port = 3260
+    iscsi_target_prefix = iqn.2010-10.org.openstack:
+  '';
+
+  cinderTgtConf = pkgs.writeText "cinder.conf" ''
+    include /var/lib/cinder/volumes/*
   '';
 in
 {
@@ -140,10 +144,60 @@ in
             mode = "0755";
           };
         };
+        "/etc/cinder/cinder.conf" = {
+          L = {
+            argument = "${cinderConf}";
+          };
+        };
+        "/etc/tgt/conf.d/cinder.conf" = {
+          L = {
+            argument = "${cinderTgtConf}";
+          };
+        };
+        "/etc/tgt/targets.conf" = {
+          L = {
+            argument = "${pkgs.tgt}/etc/tgt/targets.conf";
+          };
+        };
       };
     };
 
-    systemd.services.cinder-volume-group = {
+    # start iSCSI target daemon
+    # we expose LVM block storage as iSCSI to compute hosts
+    systemd.services.tgtd = {
+      enable = true;
+      description = "iSCSI target framework daemon";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "network.target"
+        "cinder-volume-group-setup.service"
+      ];
+      path = [
+        pkgs.coreutils
+        pkgs.tgt
+      ];
+      environment.TGTD_CONFIG = "/etc/tgt/targets.conf";
+      serviceConfig = {
+        ExecStart = "${pkgs.tgt}/bin/tgtd -f";
+        ExecStartPost = [
+          "${pkgs.coreutils}/bin/sleep 5"
+          "${pkgs.tgt}/bin/tgtadm --op update --mode sys --name State -v offline"
+          "${pkgs.tgt}/bin/tgtadm --op update --mode sys --name State -v ready"
+          "${pkgs.tgt}/bin/tgt-admin -e -c $TGTD_CONFIG"
+        ];
+
+        ExecReload = "${pkgs.tgt}/bin/tgt-admin --update ALL -f -c $TGTD_CONFIG";
+
+        ExecStop = [
+          "${pkgs.tgt}/bin/tgtadm --op update --mode sys --name State -v offline"
+          "${pkgs.tgt}/bin/tgt-admin --offline ALL"
+          "${pkgs.tgt}/bin/tgt-admin --update ALL -c /dev/null -f"
+          "${pkgs.tgt}/bin/tgtadm --op delete --mode system"
+        ];
+      };
+    };
+
+    systemd.services.cinder-volume-group-setup = {
       description = "OpenStack Cinder volume group setup";
       wantedBy = [ "multi-user.target" ];
       path = [
@@ -155,14 +209,9 @@ in
         ExecStart = pkgs.writeShellScript "cinder-volume-group.sh" ''
           set -euxo pipefail
 
-          # Setup some lvm volume group required by cinder
-          dd if=/dev/zero of=/tmp/cinder-volumes bs=1G count=2
-
-          losetup /dev/loop0 /tmp/cinder-volumes
-
-          # Create physical volume and volume group
-          pvcreate /dev/loop0
-          vgcreate cinder-volumes /dev/loop0
+          # create a new LVM volume group on second disk
+          pvcreate /dev/vdb
+          vgcreate cinder-volumes /dev/vdb
         '';
       };
     };
@@ -173,12 +222,13 @@ in
     # Update: still does not work -.-
     environment.systemPackages = [
       pkgs.qemu
+      pkgs.tgt
     ];
 
     systemd.services.cinder-volume = {
       description = "OpenStack Cinder Volume";
       after = [
-        "cinder-volume-group.service"
+        "cinder-volume-group-setup.service"
       ];
       path = with pkgs; [
         cinder_env

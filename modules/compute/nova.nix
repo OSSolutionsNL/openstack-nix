@@ -189,14 +189,7 @@ in
             user = "nova";
           };
         };
-        "/etc/systemd/system/tgtd.service" = {
-          "C+" = {
-            user = "root";
-            group = "root";
-            mode = "0600";
-            argument = "${pkgs.tgt}/etc/systemd/system/tgtd.service";
-          };
-        };
+        # we don't need tgt on a compute node -> only iscsi-client (openiscsi)
       };
     };
 
@@ -205,7 +198,7 @@ in
       name = "iqn.iscsi.${config.networking.hostName}";
     };
 
-    environment.systemPackages = [ pkgs.tgt ];
+    environment.systemPackages = [ pkgs.openiscsi ];
 
     systemd.services.nova-compute = {
       description = "OpenStack Nova Scheduler Daemon";
@@ -222,7 +215,7 @@ in
           qemu
           util-linux
           lvm2
-          tgt
+          openiscsi
         ]
         ++ cfg.extraPkgs;
       environment.PYTHONPATH = "${nova_env}/${pkgs.python3.sitePackages}";
