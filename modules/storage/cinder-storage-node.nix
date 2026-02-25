@@ -33,7 +33,7 @@ let
     inherit utils_env;
   };
 
-  cinderConf = pkgs.writeText "cinder.conf" ''
+  cinderConfLvm = pkgs.writeText "cinder.conf" ''
     [DEFAULT]
     transport_url = rabbit://openstack:openstack@controller
     auth_strategy = keystone
@@ -78,6 +78,42 @@ let
     iscsi_target_prefix = iqn.2010-10.org.openstack:
   '';
 
+  cinderConfNfs = pkgs.writeText "cinder.conf" ''
+    [DEFAULT]
+    transport_url = rabbit://openstack:openstack@controller
+    auth_strategy = keystone
+    my_ip = 10.0.0.20
+    enabled_backends = nfs
+    volumes_dir = /var/lib/cinder/volumes
+    state_path = /var/lib/cinder
+    rootwrap_config = ${rootwrapConf}
+    glance_api_servers = http://controller:9292
+    verify_glance_signatures = disabled
+    log_dir = /var/log/cinder
+
+    [database]
+    connection = mysql+pymysql://cinder:cinder@controller/cinder
+
+    [keystone_authtoken]
+    www_authenticate_uri = http://controller:5000
+    auth_url = http://controller:5000
+    memcached_servers = controller:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = cinder
+    password = cinder
+
+    [oslo_concurrency]
+    lock_path = /var/lib/cinder/tmp
+
+    [nfs]
+    volume_driver = cinder.volume.drivers.nfs.NfsDriver
+    nfs_shares_config = /etc/cinder/nfs_shares
+    nfs_mount_options = vers=3
+  '';
+
   cinderTgtConf = pkgs.writeText "cinder.conf" ''
     include /var/lib/cinder/volumes/*
   '';
@@ -92,7 +128,7 @@ in
       default = true;
     };
     config = mkOption {
-      default = cinderConf;
+      default = if (cfg.backend == "lvm") then cinderConfLvm else cinderConfNfs;
       description = ''
         The Cinder config.
       '';
@@ -102,6 +138,19 @@ in
       type = types.package;
       description = ''
         The OpenStack Cinder package to use.
+      '';
+    };
+    backend = mkOption {
+      default = "nfs";
+      type =
+        with types;
+        enum [
+          "lvm"
+          "nfs"
+        ];
+      description = ''
+        Type of Cinder Storage backend.
+        Possible options: [ lvm | nfs ]
       '';
     };
   };
@@ -146,26 +195,45 @@ in
         };
         "/etc/cinder/cinder.conf" = {
           L = {
-            argument = "${cinderConf}";
-          };
-        };
-        "/etc/tgt/conf.d/cinder.conf" = {
-          L = {
-            argument = "${cinderTgtConf}";
-          };
-        };
-        "/etc/tgt/targets.conf" = {
-          L = {
-            argument = "${pkgs.tgt}/etc/tgt/targets.conf";
+            argument = "${cfg.config}";
           };
         };
       };
+      "20-cinder-backend" =
+        if (cfg.backend == "lvm") then
+          # LVM configuration files
+          {
+            "/etc/tgt/conf.d/cinder.conf" = {
+              L = {
+                argument = "${cinderTgtConf}";
+              };
+            };
+            "/etc/tgt/targets.conf" = {
+              L = {
+                argument = "${pkgs.tgt}/etc/tgt/targets.conf";
+              };
+            };
+          }
+        else
+          # NFS configuration files
+          {
+            "/etc/cinder/nfs_shares" = {
+              f = {
+                user = "cinder";
+                group = "cinder";
+                mode = "0644";
+                argument = ''
+                  10.0.0.20:/exports
+                '';
+              };
+            };
+          };
     };
 
     # start iSCSI target daemon
     # we expose LVM block storage as iSCSI to compute hosts
     systemd.services.tgtd = {
-      enable = true;
+      enable = if (cfg.backend == "lvm") then true else false;
       description = "iSCSI target framework daemon";
       wantedBy = [ "multi-user.target" ];
       after = [
@@ -197,22 +265,41 @@ in
       };
     };
 
+    services.nfs.server.enable = if (cfg.backend == "lvm") then false else true;
+    services.nfs.server.exports = ''
+      /exports 10.0.0.0/24(rw,no_root_squash,insecure)
+    '';
+
     systemd.services.cinder-volume-group-setup = {
       description = "OpenStack Cinder volume group setup";
       wantedBy = [ "multi-user.target" ];
-      path = [
-        pkgs.lvm2
-        pkgs.util-linux
+      path = with pkgs; [
+        lvm2
+        util-linux
+        e2fsprogs
+        nfs-utils
       ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = pkgs.writeShellScript "cinder-volume-group.sh" ''
-          set -euxo pipefail
+        ExecStart =
+          if (cfg.backend == "lvm") then
+            pkgs.writeShellScript "cinder-volume-group.sh" ''
+              set -euxo pipefail
 
-          # create a new LVM volume group on second disk
-          pvcreate /dev/vdb
-          vgcreate cinder-volumes /dev/vdb
-        '';
+              # create a new LVM volume group on second disk
+              pvcreate /dev/vdb
+              vgcreate cinder-volumes /dev/vdb
+            ''
+          else
+            pkgs.writeShellScript "cinder-volume-group.sh" ''
+              set -euxo pipefail
+
+              # create a filesystem and mount and export it
+              mkdir /exports
+              mkfs.ext4 -F -m 0 /dev/vdb
+              mount /dev/vdb /exports
+              exportfs -rv
+            '';
       };
     };
 
@@ -220,25 +307,50 @@ in
     # find the qemu-img command it requires for non-raw images. As a
     # workaround, add it as a systemPackage.
     # Update: still does not work -.-
-    environment.systemPackages = [
-      pkgs.qemu
-      pkgs.tgt
-    ];
+
+    environment.systemPackages =
+      if (cfg.backend == "lvm") then
+        with pkgs;
+        [
+          qemu
+          tgt
+        ]
+      else
+        with pkgs;
+        [
+          qemu
+          nfs-utils
+          e2fsprogs
+        ];
 
     systemd.services.cinder-volume = {
       description = "OpenStack Cinder Volume";
       after = [
         "cinder-volume-group-setup.service"
       ];
-      path = with pkgs; [
-        cinder_env
-        lvm2
-        tgt
-        qemu-utils
-        # sudo must be in the path and only sudo in /run/wrappers has the
-        # correct owner and rights
-        "/run/wrappers"
-      ];
+      path =
+        if (cfg.backend == "lvm") then
+          with pkgs;
+          [
+            cinder_env
+            lvm2
+            tgt
+            qemu-utils
+            # sudo must be in the path and only sudo in /run/wrappers has the
+            # correct owner and rights
+            "/run/wrappers"
+          ]
+        else
+          with pkgs;
+          [
+            cinder_env
+            lvm2
+            qemu-utils
+            # sudo must be in the path and only sudo in /run/wrappers has the
+            # correct owner and rights
+            "/run/wrappers"
+          ];
+
       environment.PYTHONPATH = "${cinder_env}/${pkgs.python3.sitePackages}";
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {

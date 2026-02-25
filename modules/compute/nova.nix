@@ -198,7 +198,10 @@ in
       name = "iqn.iscsi.${config.networking.hostName}";
     };
 
-    environment.systemPackages = [ pkgs.openiscsi ];
+    environment.systemPackages = with pkgs; [
+      openiscsi
+      nfs-utils
+    ];
 
     systemd.services.nova-compute = {
       description = "OpenStack Nova Scheduler Daemon";
@@ -216,6 +219,7 @@ in
           util-linux
           lvm2
           openiscsi
+          nfs-utils
         ]
         ++ cfg.extraPkgs;
       environment.PYTHONPATH = "${nova_env}/${pkgs.python3.sitePackages}";
