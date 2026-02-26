@@ -22,6 +22,7 @@ let
     "update_port:binding:profile": "@"
   '';
 
+  # neutron.conf is used as configuration file for neutron-metadata-agent as well
   neutronConf = pkgs.writeText "neutron.conf" ''
     [database]
     connection = mysql+pymysql://neutron:neutron@controller/neutron
@@ -35,6 +36,8 @@ let
     notify_nova_on_port_status_changes = true
     notify_nova_on_port_data_changes = true
     log_dir = /var/log/neutron
+    nova_metadata_host = controller
+    metadata_proxy_shared_secret = neutron_metadata_secret
 
     [keystone_authtoken]
     www_authenticate_uri = http://controller:5000
@@ -107,6 +110,7 @@ let
     ovsdb_debug = true
   '';
 
+  # currently not used
   metadataAgentConf = pkgs.writeText "metadata_agent.ini" ''
     [DEFAULT]
     nova_metadata_host = controller
@@ -264,7 +268,7 @@ in
       wantedBy = [ "multi-user.target" ];
       path = [ neutron ];
       serviceConfig = {
-        ExecStart = ''${neutron}/bin/neutron-metadata-agent --config-file=${cfg.config} --config-file=${cfg.ml2Config}'';
+        ExecStart = ''${neutron}/bin/neutron-metadata-agent --config-file=${cfg.config}'';
       };
     };
 
