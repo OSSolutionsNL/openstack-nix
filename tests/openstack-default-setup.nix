@@ -112,7 +112,9 @@ pkgs.nixosTest {
       controllerVM.wait_for_unit("nova-conductor.service")
 
       # check all services on storageVM
-      storageVM.wait_for_unit("tgtd.service")
+      ## tgtd is only used in LVM setup
+      ## storageVM.wait_for_unit("tgtd.service")
+      storageVM.wait_for_unit("nfs-server.service")
       storageVM.wait_for_unit("cinder-volume.service")
 
       assert wait_for_openstack()
@@ -140,7 +142,7 @@ pkgs.nixosTest {
       # attach volume to VM
       controllerVM.execute("openstack server add volume test_vm test_vol")
       # wait until volume is attached
-      time.sleep(20)
+      retry_until_succeed(controllerVM, "openstack volume show test_vol -f value -c status | grep 'in-use'", 20)
 
       retry_until_succeed(controllerVM, f"ip netns exec {net_ns} sshpass -p gocubsgo ssh cirros@{vm_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lsblk", 60)
       # check second block device of VM

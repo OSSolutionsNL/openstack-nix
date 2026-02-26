@@ -38,18 +38,21 @@ let
         ];
 
         environment.variables = adminEnv;
+        # pw: root
+        users.users.root.hashedPassword = lib.mkForce "$y$j9T$HiT/m702z/73g4Dt5RzbW0$b3SaYI1FoyT/ORV/qFR/s9zonJBKDn4p2XKyYM2wp1.";
+        users.users.root.hashedPasswordFile = null;
 
         # enable easy access to test VMs with ssh
-        users.users.root.openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEMjGRp1/vaTxGiGbZnaSv4wu4LUUP7lGSGDFKfF31xw paul.kroeher@cyberus-technology.de"
-        ];
+        # users.users.root.openssh.authorizedKeys.keys = [
+        #
+        # ];
 
         services.openssh = {
           enable = true;
           ports = [ 22 ];
           settings = {
             PasswordAuthentication = true;
-            PermitRootLogin = "without-password"; # "yes", "without-password", "prohibit-password", "forced-commands-only", "no"
+            PermitRootLogin = "yes"; # "yes", "without-password", "prohibit-password", "forced-commands-only", "no"
           };
         };
 
@@ -165,9 +168,9 @@ in
 
             openstack image create --disk-format raw --container-format bare --public --file ${image_raw} cirros
             openstack flavor create --public m1.nano --id auto --ram 256 --disk 0 --vcpus 1
-            openstack volume qos create --consumer "front-end" --property "total_iops_sec=20000" iops
-            openstack volume qos associate iops __DEFAULT__
-            openstack volume create --image cirros --size 1 --bootable vol
+            # openstack volume qos create --consumer "front-end" --property "total_iops_sec=20000" iops
+            # openstack volume qos associate iops __DEFAULT__
+            # openstack volume create --image cirros --size 1 --bootable vol
 
             openstack security group rule create --proto icmp default
             openstack security group rule create --proto tcp --dst-port 22 default
