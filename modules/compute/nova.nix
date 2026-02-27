@@ -98,9 +98,11 @@ let
 
     [vnc]
     enabled = true
+    novncproxy_base_url = http://127.0.0.1:6082/vnc_auto.html
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
-    novncproxy_base_url = http://controller:6080/vnc_lite.html
+    novncproxy_host = 0.0.0.0
+    novncproxy_port = 6082
 
     [cells]
     enable = False

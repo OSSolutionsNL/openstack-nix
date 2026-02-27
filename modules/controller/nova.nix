@@ -55,8 +55,11 @@ let
 
     [vnc]
     enabled = true
-    server_listen = $my_ip
+    novncproxy_base_url = http://127.0.0.1:6082/vnc_auto.html
+    server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
+    novncproxy_host = 0.0.0.0
+    novncproxy_port = 6082
 
     [glance]
     api_servers = http://controller:9292
