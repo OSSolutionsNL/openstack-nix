@@ -88,6 +88,15 @@ let
             the configuration of the dashboard.
           '';
         };
+        vncProxyHostPort = mkOption {
+          default = 6080;
+          type = types.port;
+          description = ''
+            Host port to make the vnc console feature available for the
+            OpenStack dashboard. Changing the value might requires to change
+            the configuration of the dashboard.
+          '';
+        };
       };
       config = mkIf cfg.enable {
         virtualisation.forwardPorts = [
@@ -100,6 +109,11 @@ let
             from = "host";
             host.port = cfg.serialProxyHostPort;
             guest.port = 6083;
+          }
+          {
+            from = "host";
+            host.port = cfg.vncProxyHostPort;
+            guest.port = 6080;
           }
         ];
       };
