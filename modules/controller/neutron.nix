@@ -110,13 +110,6 @@ let
     ovsdb_debug = true
   '';
 
-  # currently not used
-  metadataAgentConf = pkgs.writeText "metadata_agent.ini" ''
-    [DEFAULT]
-    nova_metadata_host = controller
-    metadata_proxy_shared_secret = neutron_metadata_secret
-  '';
-
   neutron_env = pkgs.python3.buildEnv.override {
     extraLibs = [ neutron ];
   };
@@ -170,12 +163,6 @@ in
         The Neutron DHCP agent config.
       '';
     };
-    metadataAgentConfig = mkOption {
-      default = metadataAgentConf;
-      description = ''
-        The Neutron metadata agent config.
-      '';
-    };
     providerInterface = mkOption {
       default = "eth2";
       type = types.str;
@@ -223,11 +210,6 @@ in
         "/etc/neutron/dhcp_agent.ini" = {
           L = {
             argument = "${cfg.dhcpAgentConfig}";
-          };
-        };
-        "/etc/neutron/metadata_agent.ini" = {
-          L = {
-            argument = "${cfg.metadataAgentConfig}";
           };
         };
         "/etc/neutron/api-paste.ini" = {
