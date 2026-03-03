@@ -26,7 +26,7 @@ python3Packages.buildPythonPackage rec {
     requests
   ];
 
-  propagagedBuildInputs = [
+  propagatedBuildInputs = [
     requests
   ];
 
