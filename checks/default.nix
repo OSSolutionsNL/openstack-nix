@@ -6,7 +6,6 @@
     hooks = {
       nixfmt-rfc-style.enable = true;
       deadnix.enable = true;
-      # typos.enable = true;
       typos = {
         enable = true;
         settings.configPath = "checks/.typos.toml";

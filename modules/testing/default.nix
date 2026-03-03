@@ -42,11 +42,6 @@ let
         users.users.root.hashedPassword = lib.mkForce "$y$j9T$HiT/m702z/73g4Dt5RzbW0$b3SaYI1FoyT/ORV/qFR/s9zonJBKDn4p2XKyYM2wp1.";
         users.users.root.hashedPasswordFile = null;
 
-        # enable easy access to test VMs with ssh
-        # users.users.root.openssh.authorizedKeys.keys = [
-        #
-        # ];
-
         services.openssh = {
           enable = true;
           ports = [ 22 ];
