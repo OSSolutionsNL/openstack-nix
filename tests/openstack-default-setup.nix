@@ -144,10 +144,26 @@ pkgs.nixosTest {
       # wait until volume is attached
       retry_until_succeed(controllerVM, "openstack volume show test_vol -f value -c status | grep 'in-use'", 20)
 
-      retry_until_succeed(controllerVM, f"ip netns exec {net_ns} sshpass -p gocubsgo ssh cirros@{vm_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lsblk", 60)
+      # add ssh host key to known_hosts
+      retry_until_succeed(controllerVM, f"ip netns exec {net_ns} ssh-keyscan {vm_ip} > ~/.ssh/known_hosts", 60)
+
+      # passwordless ssh login should work if the metadata service is running and nova can access it
+      ## check on controllerVM
+      ## neutron.conf
+      ## [DEFAULT]
+      ## metadata_proxy_shared_secret = secret
+      ##
+      ## nova.conf
+      ## [neutron]
+      ## service_metadata_proxy = true
+      ## metadata_proxy_shared_secret = secret
+
+      retry_until_succeed(controllerVM, f"ip netns exec {net_ns} ssh cirros@{vm_ip} lsblk", 60)
       # check second block device of VM
-      status, output = controllerVM.execute(f"ip netns exec {net_ns} sshpass -p gocubsgo ssh cirros@{vm_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lsblk | grep vdb")
+      status, output = controllerVM.execute(f"ip netns exec {net_ns} ssh cirros@{vm_ip} lsblk | grep vdb")
       output = output.strip()
+      print(f"output of lsblk: {output}")
+      print(f"exit code of lsblk: {status}")
       assert status == 0
       assert output == "vdb     252:16   0    4G  0 disk"
     '';
