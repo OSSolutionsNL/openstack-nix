@@ -100,13 +100,16 @@ let
     enabled = true
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
-    novncproxy_base_url = http://controller:6080/vnc_lite.html
+    novncproxy_base_url = http://127.0.0.1:6080/vnc_lite.html
 
     [cells]
     enable = False
 
     [os_region_name]
     openstack =
+
+    [cinder]
+    os_region_name = RegionOne
   '';
 
   rootwrapConf = pkgs.callPackage ../../lib/rootwrap-conf.nix {
@@ -186,8 +189,19 @@ in
             user = "nova";
           };
         };
+        # we don't need tgt on a compute node -> only iscsi-client (openiscsi)
       };
     };
+
+    services.openiscsi = {
+      enable = true;
+      name = "iqn.iscsi.${config.networking.hostName}";
+    };
+
+    environment.systemPackages = with pkgs; [
+      openiscsi
+      nfs-utils
+    ];
 
     systemd.services.nova-compute = {
       description = "OpenStack Nova Scheduler Daemon";
@@ -202,6 +216,10 @@ in
           sudo
           nova_env
           qemu
+          util-linux
+          lvm2
+          openiscsi
+          nfs-utils
         ]
         ++ cfg.extraPkgs;
       environment.PYTHONPATH = "${nova_env}/${pkgs.python3.sitePackages}";

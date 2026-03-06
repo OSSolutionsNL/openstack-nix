@@ -5,6 +5,7 @@
   glance,
   placement,
   horizon,
+  cinder,
 }:
 {
   config,
@@ -32,6 +33,7 @@ in
     (import ./nova.nix { inherit nova; })
     (import ./neutron.nix { inherit neutron; })
     (import ./horizon.nix { inherit horizon; })
+    (import ./cinder.nix { inherit cinder; }) # only cinder management component
   ];
 
   config = {
@@ -59,6 +61,12 @@ in
           mysql -N -e "create database glance;" || true
           mysql -N -e "GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'glance';"
           mysql -N -e "GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glance';"
+
+          # Cinder
+          mysql -N -e "drop database cinder;" || true
+          mysql -N -e "create database cinder;" || true
+          mysql -N -e "GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' IDENTIFIED BY 'cinder';"
+          mysql -N -e "GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cinder';"
 
           # Placement
           mysql -N -e "drop database placement;" || true
@@ -142,6 +150,29 @@ in
           openstack role add --project service --user glance admin
           openstack role add --user glance --user-domain default --system all reader
           glance-manage --config-file ${config.glance.config} db_sync
+        '';
+      };
+    };
+
+    systemd.services.cinder = {
+      description = "OpenStack Cinder setup";
+      after = [ "keystone-all.service" ];
+      wantedBy = [ "multi-user.target" ];
+      environment = adminEnv;
+      path = [
+        pkgs.openstackclient
+        cinder
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "cinder";
+        Group = "cinder";
+        ExecStart = pkgs.writeShellScript "cinder.sh" ''
+          set -euxo pipefail
+          openstack user create --domain default --password cinder cinder || true
+          openstack role add --project service --user cinder admin  || true
+          openstack role add --user cinder --user-domain default --system all reader || true
+          cinder-manage --config-file ${config.cinder.config} db sync
         '';
       };
     };

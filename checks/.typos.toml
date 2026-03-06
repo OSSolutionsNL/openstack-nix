@@ -1,0 +1,5 @@
+[default]
+extend-ignore-words-re = [
+    # ignore some correct command line tools
+    "exportfs"
+]
